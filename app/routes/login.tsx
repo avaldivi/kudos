@@ -4,12 +4,72 @@ import { json } from '@remix-run/node';
 import { Layout } from '~/components/Layout';
 import { Form, useActionData } from '@remix-run/react';
 import { FormField } from '~/components/FormField';
+import {
+  validateEmail,
+  validatePassword,
+  validateName,
+} from '~/utils/validators.server';
+import { login, register } from '~/utils/auth.server';
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const userInfo = Object.fromEntries(formData);
   console.log({ userInfo });
-  return json({ userInfo });
+  const { email, password, firstName, lastName, _action: action } = userInfo;
+
+  if (
+    typeof action !== 'string' ||
+    typeof email !== 'string' ||
+    typeof password !== 'string'
+  ) {
+    return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+  }
+
+  if (
+    action === 'register' &&
+    (typeof firstName !== 'string' || typeof lastName !== 'string')
+  ) {
+    return json({ error: `Invalid Form Data`, form: action }, { status: 400 });
+  }
+
+  const errors = {
+    email: validateEmail(email as string),
+    password: validatePassword(password as string),
+    ...(action === 'register'
+      ? {
+          firstName: validateName((firstName as string) || ''),
+          lastName: validateName((lastName as string) || ''),
+        }
+      : {}),
+  };
+
+  if (Object.values(errors).some(Boolean))
+    return json(
+      {
+        errors,
+        fields: { email, password, firstName, lastName },
+        form: action,
+      },
+      { status: 400 }
+    );
+
+  switch (action) {
+    case 'login': {
+      return await login({ email, password });
+    }
+    case 'register': {
+      const userFirstName = firstName as string;
+      const userLastName = lastName as string;
+      return await register({
+        email,
+        password,
+        firstName: userFirstName,
+        lastName: userLastName,
+      });
+    }
+    default:
+      return json({ error: `Invalid Form Data` }, { status: 400 });
+  }
 }
 
 export default function Login() {
