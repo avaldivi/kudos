@@ -30,9 +30,9 @@ export const action: ActionFunction = async ({ request }) => {
       emoji: Emoji;
     };
 
-  if (![formValues].every((value) => typeof value === 'string')) {
-    return json({ error: `Invalid Form Data` }, { status: 400 });
-  }
+  //   if (![formValues].every((value) => typeof value === 'string')) {
+  //     return json({ error: `Invalid Form Data` }, { status: 400 });
+  //   }
 
   if (!message.length) {
     return json({ error: `Please provide a message.` }, { status: 400 });
@@ -41,7 +41,7 @@ export const action: ActionFunction = async ({ request }) => {
     return json({ error: `No recipient found...` }, { status: 400 });
   }
 
-  await createKudo(message, userId, recipientId, {
+  const kudoCreated = await createKudo(message, userId, recipientId, {
     backgroundColor: backgroundColor as Color,
     textColor: textColor as Color,
     emoji: emoji as Emoji,
