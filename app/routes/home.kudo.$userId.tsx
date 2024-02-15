@@ -1,13 +1,54 @@
 import { useState } from 'react';
-import { KudoStyle } from '@prisma/client';
-import { json, LoaderFunction, redirect } from '@remix-run/node';
+import { KudoStyle, Color, Emoji } from '@prisma/client';
+import {
+  json,
+  LoaderFunction,
+  ActionFunction,
+  redirect,
+} from '@remix-run/node';
 import { useLoaderData, useActionData } from '@remix-run/react';
 import { getUser } from '~/utils/auth.server';
 import { getUserById } from '~/utils/user.server';
 import { UserCircle } from '~/components/UserCircle';
 import { Modal } from '~/components/Modal';
 import { SelectBox } from '~/components/SelectBox';
+import { Kudo } from '~/components/Kudo';
 import { colorMap, emojiMap } from '~/utils/constants';
+import { requireUserId } from '~/utils/auth.server';
+import { createKudo } from '~/utils/kudos.server';
+
+export const action: ActionFunction = async ({ request }) => {
+  const userId = await requireUserId(request);
+  const form = await request.formData();
+  const formValues = Object.fromEntries(form);
+  const { recipientId, message, backgroundColor, textColor, emoji } =
+    formValues as {
+      recipientId: string;
+      message: string;
+      backgroundColor: Color;
+      textColor: Color;
+      emoji: Emoji;
+    };
+
+  if (![formValues].every((value) => typeof value === 'string')) {
+    return json({ error: `Invalid Form Data` }, { status: 400 });
+  }
+
+  if (!message.length) {
+    return json({ error: `Please provide a message.` }, { status: 400 });
+  }
+  if (!recipientId.length) {
+    return json({ error: `No recipient found...` }, { status: 400 });
+  }
+
+  await createKudo(message, userId, recipientId, {
+    backgroundColor: backgroundColor as Color,
+    textColor: textColor as Color,
+    emoji: emoji as Emoji,
+  });
+
+  return redirect('/home');
+};
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const { userId } = params;
@@ -138,7 +179,7 @@ export default function KudoModal() {
         <br />
         <p className='text-blue-600 font-semibold mb-2'>Preview</p>
         <div className='flex flex-col items-center md:flex-row gap-x-24 gap-y-2 md:gap-y-0'>
-          {/* The Preview Goes Here */}
+          <Kudo profile={user.profile} kudo={formData} />
           <div className='flex-1' />
           <button
             type='submit'
