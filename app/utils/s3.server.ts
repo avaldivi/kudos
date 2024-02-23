@@ -6,7 +6,6 @@ import {
   UploadHandler,
 } from '@remix-run/node';
 import { PassThrough } from 'stream';
-import type { Readable } from 'stream';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import cuid from 'cuid';
